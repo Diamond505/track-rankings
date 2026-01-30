@@ -192,7 +192,8 @@ def sync_to_github():
         subprocess.run([git_cmd, "branch", "-M", "main"], cwd=root_dir, check=True)
         
         print("3/3 Pushing to GitHub...")
-        subprocess.run([git_cmd, "push", "-u", "origin", "main"], cwd=root_dir, check=True)
+        # Force push to overwrite remote if history diverged (e.g. init with README)
+        subprocess.run([git_cmd, "push", "--force", "-u", "origin", "main"], cwd=root_dir, check=True)
         
         print("\n✅ Successfully synced to GitHub!")
     except subprocess.CalledProcessError as e:
