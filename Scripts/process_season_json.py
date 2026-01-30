@@ -34,8 +34,19 @@ def load_json_from_file(file_path):
                 print(f'Error loading JSON from {file_path}: {e}')
     return None
 
-def process_current_seasonal_standings(input_folder, output_file):
+def process_current_seasonal_standings(input_folder, output_file, season_start_date=None, season_end_date=None):
+    """
+    Process race results for championship standings.
+    
+    Args:
+        input_folder: Folder containing JSON result files
+        output_file: Output CSV file path
+        season_start_date: Optional start date (format: YYMMDD, e.g., '251001' for Oct 1, 2025)
+        season_end_date: Optional end date (format: YYMMDD)
+    """
     print(f"Scanning folder for RACE results: {input_folder}")
+    if season_start_date or season_end_date:
+        print(f"Season filter: {season_start_date or 'start'} to {season_end_date or 'end'}")
     
     search_pattern = os.path.join(input_folder, "*.json")
     files = glob.glob(search_pattern)
@@ -66,6 +77,22 @@ def process_current_seasonal_standings(input_folder, output_file):
 
     for file_path in files:
         filename = os.path.basename(file_path)
+        
+        # Check if this is a MAIN RACE file (ends with _R.json ONLY, not _R2.json)
+        # File format: YYMMDD_HHMMSS_<SESSION>.json
+        if not re.search(r'_R\.json$', filename, re.IGNORECASE):
+            # Skip non-race files (FP, Q, R2, etc.)
+            continue
+        
+        # Check date range if specified
+        if season_start_date or season_end_date:
+            # Extract date from filename (first 6 characters: YYMMDD)
+            file_date = filename[:6]
+            if season_start_date and file_date < season_start_date:
+                continue
+            if season_end_date and file_date > season_end_date:
+                continue
+        
         data = load_json_from_file(file_path)
         
         if not data:
@@ -118,10 +145,19 @@ def process_current_seasonal_standings(input_folder, output_file):
             # Often 'carModel' matches a class.
             # For this standalone script, let's store what we have.
             car_model_id = car_info.get('carModel', '')
-            # We could map model ID to class if we had the map here, 
-            # but user didn't ask for class separation in scoring, just series scoring.
             
-            stats = get_entry(steam_id, f_name, l_name, 'Unknown')
+            # GT3 Class Filter: Only process GT3 cars
+            # ACC carModel IDs: GT3 cars are typically 0-50, GT4 cars are 50+
+            # If carModel is not in GT3 range, skip this driver
+            try:
+                car_model_num = int(car_model_id)
+                if car_model_num > 50:  # Not a GT3 car (likely GT4 or other class)
+                    continue
+            except (ValueError, TypeError):
+                # If we can't determine car model, skip it
+                continue
+            
+            stats = get_entry(steam_id, f_name, l_name, 'GT3')
             stats['TotalPoints'] += points
             stats['Races'] += 1
             if position == 1:
@@ -159,5 +195,29 @@ if __name__ == "__main__":
         # Fallback for different CWD
         INPUT_DIR = "Files/Results_json"
         OUTPUT_FILE = "Files/Results_csv/current_standings.csv"
-        
-    process_current_seasonal_standings(INPUT_DIR, OUTPUT_FILE)
+    
+    # Ask user for season date range (optional)
+    print("\n" + "="*60)
+    print("SEASON DATE RANGE (Optional)")
+    print("="*60)
+    print("Leave blank to process ALL race files.")
+    print("Format: YYMMDD (e.g., 260101 for Jan 1, 2026)")
+    print()
+    
+    season_start = input("Season start date (YYMMDD) or press Enter to skip: ").strip()
+    season_end = input("Season end date (YYMMDD) or press Enter to skip: ").strip()
+    
+    # Validate format
+    if season_start and len(season_start) != 6:
+        print("Invalid start date format. Processing all files.")
+        season_start = None
+    if season_end and len(season_end) != 6:
+        print("Invalid end date format. Processing all files.")
+        season_end = None
+    
+    process_current_seasonal_standings(
+        INPUT_DIR, 
+        OUTPUT_FILE,
+        season_start_date=season_start if season_start else None,
+        season_end_date=season_end if season_end else None
+    )
