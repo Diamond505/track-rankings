@@ -156,6 +156,31 @@ def sync_to_github():
     else:
         root_dir = "."
 
+    # CRITICAL FIX: Ensure remote 'origin' actually exists!
+    # (The previous setup might have been skipped if .git existed, but origin was missing)
+    try:
+        subprocess.run([git_cmd, "remote", "get-url", "origin"], cwd=root_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+    except subprocess.CalledProcessError:
+        print("\n⚠️  Git repository exists, but the link to GitHub is missing.")
+        repo_url = input("Paste your GitHub Repository URL here to repair it: ").strip()
+        
+        if not repo_url:
+             print("❌ Cannot sync without a GitHub URL.")
+             input("\nPress Enter to return...")
+             return
+             
+        if not repo_url.startswith("http"):
+            repo_url = f"https://github.com/{repo_url}"
+            
+        try:
+            print(f"Linking to {repo_url}...")
+            subprocess.run([git_cmd, "remote", "add", "origin", repo_url], cwd=root_dir, check=True)
+            print("✅ Link repaired!")
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Failed to add remote: {e}")
+            input("\nPress Enter to return...")
+            return
+
     try:
         print("1/3 Adding files...")
         subprocess.run([git_cmd, "add", "."], cwd=root_dir, check=True)
