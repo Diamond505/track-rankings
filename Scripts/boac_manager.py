@@ -163,6 +163,9 @@ def sync_to_github():
         print("2/3 Committing changes...")
         subprocess.run([git_cmd, "commit", "-m", "Auto-update from BoA Manager"], cwd=root_dir, check=False) 
         
+        # Renaissance the branch to 'main' to avoid 'master' vs 'main' conflicts
+        subprocess.run([git_cmd, "branch", "-M", "main"], cwd=root_dir, check=True)
+        
         print("3/3 Pushing to GitHub...")
         subprocess.run([git_cmd, "push", "-u", "origin", "main"], cwd=root_dir, check=True)
         
