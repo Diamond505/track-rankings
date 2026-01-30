@@ -328,49 +328,44 @@ def main():
 
     # --- Tab 2: Track Leaderboards ---
     with tab2:
-        if view_option == "Live Series Standings":
-            st.info("Track breakdowns are best viewed in 'Global Driver Rankings' mode (uses separate track CSVs).")
-            # We could technically show them if we wanted, but the logic separates them.
-        elif view_option == "Season 16 (Archive)":
-             st.info("Archive track details not loaded.")
-        else:
-            # Global Rankings Mode - Show Track Data
-            st.header("Track Records")
-            
-            # Load Track Data (if not already loaded in Tab 1 logic, but safer to re-check path)
-            data = None
-            if track_data_path:
-                 try:
-                     data = pd.read_csv(track_data_path, delimiter=';')
-                     data.columns = data.columns.str.strip()
-                     data = data[data['Best lap (ms)'] < 2147483647].copy()
-                 except:
-                     pass
-            
-            if data is not None:
-                # Sidebar/Top Filters for this tab
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    track_list = sorted(data['Track'].unique())
-                    selected_track = st.selectbox("Select Track", track_list)
-                    
-                with col2:
-                    track_subset = data[data['Track'] == selected_track]
-                    available_classes = sorted(track_subset['Car Class'].unique()) if not track_subset.empty else []
-                    selected_class = st.selectbox("Select Class", available_classes)
+        st.header("Track Records")
         
-                if selected_track and selected_class:
-                    track_data = data[
-                        (data['Track'] == selected_track) & 
-                        (data['Car Class'] == selected_class)
-                    ].copy()
-                    track_data = track_data.sort_values('Best lap (ms)').drop_duplicates(subset=['SteamId'])
-                    track_data['Rank'] = range(1, len(track_data) + 1)
-                    
-                    st.subheader(f"Results: {selected_track} - {selected_class}")
-                    cols = ['Rank', 'LastName', 'Car', 'Best lap']
-                    st.dataframe(track_data[cols], hide_index=True, width="stretch")
+        # Load Track Data
+        data = None
+        if track_data_path:
+             try:
+                 data = pd.read_csv(track_data_path, delimiter=';')
+                 data.columns = data.columns.str.strip()
+                 data = data[data['Best lap (ms)'] < 2147483647].copy()
+             except:
+                 pass
+        
+        if data is not None:
+            # Sidebar/Top Filters for this tab
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                track_list = sorted(data['Track'].unique())
+                selected_track = st.selectbox("Select Track", track_list)
+                
+            with col2:
+                track_subset = data[data['Track'] == selected_track]
+                available_classes = sorted(track_subset['Car Class'].unique()) if not track_subset.empty else []
+                selected_class = st.selectbox("Select Class", available_classes)
+    
+            if selected_track and selected_class:
+                track_data = data[
+                    (data['Track'] == selected_track) & 
+                    (data['Car Class'] == selected_class)
+                ].copy()
+                track_data = track_data.sort_values('Best lap (ms)').drop_duplicates(subset=['SteamId'])
+                track_data['Rank'] = range(1, len(track_data) + 1)
+                
+                st.subheader(f"Results: {selected_track} - {selected_class}")
+                cols = ['Rank', 'LastName', 'Car', 'Best lap']
+                st.dataframe(track_data[cols], hide_index=True, width="stretch")
+        else:
+            st.warning("Track data file (all_tracks_data.csv) not found.")
 
 if __name__ == "__main__":
     main()
