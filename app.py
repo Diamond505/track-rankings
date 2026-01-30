@@ -25,10 +25,9 @@ def load_data(file_path):
     # Try different paths locally vs deployed
     possible_paths = [
         file_path,
+        "Files/Results_csv/all_tracks_data.csv",
         "all_tracks_data.csv",
-        "../Files/Results_csv/all_tracks_data.csv",
-        "../Files/Results S16/all_tracks_data.csv",
-        "data/all_tracks_data.csv"
+        "Scripts/all_tracks_data.csv"
     ]
     
     csv_file = None
@@ -204,7 +203,7 @@ def main():
     # Try different paths for the logo
     logo_path = None
     possible_logos = [
-        "../Files/assets/boa_logo.png",
+        "Files/assets/boa_logo.png",
         "assets/boa_logo.png",
         "boa_logo.png"
     ]
@@ -247,8 +246,8 @@ def main():
     def find_file(filename):
         possible_paths = [
             filename,
-            f"../Files/Results_csv/{filename}",
-            f"Files/Results_csv/{filename}"
+            f"Files/Results_csv/{filename}",
+            f"Scripts/{filename}"
         ]
         for path in possible_paths:
             if os.path.exists(path):
@@ -291,7 +290,7 @@ def main():
                     st.dataframe(
                         championship_data[champ_cols],
                         hide_index=True,
-                        use_container_width=True
+                        width="stretch"
                     )
                 except Exception as e:
                     st.error(f"Error calculating Global Rankings: {e}")
@@ -320,7 +319,7 @@ def main():
                     st.dataframe(
                         current_df[display_cols],
                         hide_index=True,
-                        use_container_width=True
+                        width="stretch"
                     )
                 except Exception as e:
                      st.error(f"Error loading Current Season standings: {e}")
@@ -371,7 +370,7 @@ def main():
                     
                     st.subheader(f"Results: {selected_track} - {selected_class}")
                     cols = ['Rank', 'LastName', 'Car', 'Best lap']
-                    st.dataframe(track_data[cols], hide_index=True, use_container_width=True)
+                    st.dataframe(track_data[cols], hide_index=True, width="stretch")
 
 if __name__ == "__main__":
     main()

@@ -8,17 +8,22 @@ def clear_screen():
 
 def print_header():
     print("=========================================")
-    print("   🏎️  BoA RACING LEADERBOARD MANAGER   ")
+    print("      BoA RACING LEADERBOARD MANAGER     ")
     print("=========================================")
 
 def run_script(script_name):
+    # If script is not in root, try Scripts/
+    path = script_name
+    if not os.path.exists(path):
+        path = os.path.join("Scripts", script_name)
+        
     print(f"\n--- Running {script_name} ---")
     try:
         # Use python from current environment
-        result = subprocess.run([sys.executable, script_name], 
+        result = subprocess.run([sys.executable, path], 
                               check=True, 
                               capture_output=False) # Let output flow to console
-        print(f"\n✅ {script_name} completed successfully.")
+        print(f"\n[OK] {script_name} completed successfully.")
     except subprocess.CalledProcessError as e:
         print(f"\n❌ Error running {script_name}: {e}")
     except FileNotFoundError:
@@ -54,7 +59,7 @@ def fix_safe_directory(git_cmd):
         if cwd.endswith("Scripts"):
             root_dir = os.path.dirname(cwd)
         else:
-            root_dir = cwd
+            root_dir = "."
         
         # Normalize path for Git (forward slashes)
         safe_path = root_dir.replace('\\', '/')
@@ -71,7 +76,7 @@ def check_git_identity(git_cmd):
         # Check if email is configured
         subprocess.run([git_cmd, "config", "user.email"], stdout=subprocess.DEVNULL, check=True)
     except subprocess.CalledProcessError:
-        print("\n⚠️  Git needs to know who you are for the first commit.")
+        print("\n[!] Git needs to know who you are for the first commit.")
         print("This is a one-time setup.")
         
         name = input("Enter your Name (e.g. John Doe): ").strip()
@@ -85,11 +90,11 @@ def check_git_identity(git_cmd):
         subprocess.run([git_cmd, "config", "--global", "user.email", email], check=True)
 
 def sync_to_github():
-    print("\n--- ☁️ Syncing to GitHub ---")
+    print("\n--- Syncing to GitHub ---")
     git_cmd = check_git()
     
     if not git_cmd:
-        print("❌ Git is not installed or not found in PATH.")
+        print("[ERROR] Git is not installed or not found in PATH.")
         print("👉 TRY THIS: Restart your VS Code or Terminal to refresh the settings.")
         print("If that fails, verify installation from: https://git-scm.com/downloads")
         input("\nPress Enter to return...")
@@ -106,7 +111,7 @@ def sync_to_github():
         # We might be in Scripts/ so check parent too, but usually git init is in root.
         # Let's assume we want to init in the project root (parent of Scripts if we are in Scripts)
         
-        print("❌ This folder is not linked to GitHub yet.")
+        print("[ERROR] This folder is not linked to GitHub yet.")
         print("I can set it up for you right now.")
         
         repo_url = input("\nPaste your GitHub Repository URL here (or Press Enter to cancel): ").strip()
@@ -128,7 +133,7 @@ def sync_to_github():
             if cwd.endswith("Scripts"):
                 root_dir = os.path.dirname(cwd) # Parent of Scripts
             else:
-                root_dir = cwd
+                root_dir = "."
             
             # Already called fix_safe_directory but explicit init logic follows
             print("2/3 Initializing Git...")
@@ -142,10 +147,10 @@ def sync_to_github():
                 print("Remote 'origin' already exists. Updating it...")
                 subprocess.run([git_cmd, "remote", "set-url", "origin", repo_url], cwd=root_dir, check=True)
             
-            print("\n✅ Setup Complete! Proceeding to sync...")
+            print("\n[OK] Setup Complete! Proceeding to sync...")
             
         except subprocess.CalledProcessError as e:
-            print(f"\n❌ Error setting up Git: {e}")
+            print(f"\n[ERROR] Error setting up Git: {e}")
             input("\nPress Enter to return...")
             return
 
@@ -161,11 +166,11 @@ def sync_to_github():
     try:
         subprocess.run([git_cmd, "remote", "get-url", "origin"], cwd=root_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
     except subprocess.CalledProcessError:
-        print("\n⚠️  Git repository exists, but the link to GitHub is missing.")
+        print("\n[!] Git repository exists, but the link to GitHub is missing.")
         repo_url = input("Paste your GitHub Repository URL here to repair it: ").strip()
         
         if not repo_url:
-             print("❌ Cannot sync without a GitHub URL.")
+             print("[ERROR] Cannot sync without a GitHub URL.")
              input("\nPress Enter to return...")
              return
              
@@ -175,9 +180,9 @@ def sync_to_github():
         try:
             print(f"Linking to {repo_url}...")
             subprocess.run([git_cmd, "remote", "add", "origin", repo_url], cwd=root_dir, check=True)
-            print("✅ Link repaired!")
+            print("[OK] Link repaired!")
         except subprocess.CalledProcessError as e:
-            print(f"❌ Failed to add remote: {e}")
+            print(f"[ERROR] Failed to add remote: {e}")
             input("\nPress Enter to return...")
             return
 
@@ -195,9 +200,9 @@ def sync_to_github():
         # Force push to overwrite remote if history diverged (e.g. init with README)
         subprocess.run([git_cmd, "push", "--force", "-u", "origin", "main"], cwd=root_dir, check=True)
         
-        print("\n✅ Successfully synced to GitHub!")
+        print("\n[OK] Successfully synced to GitHub!")
     except subprocess.CalledProcessError as e:
-        print(f"\n❌ Error during sync: {e}")
+        print(f"\n[ERROR] Error during sync: {e}")
     
     input("\nPress Enter to return to menu...")
 
@@ -206,12 +211,12 @@ def main():
         clear_screen()
         print_header()
         print("\nSelect an action:")
-        print("1. 📈 Update Live Series Standings (Process JSONs)")
-        print("2. 🌍 Update Global Rankings (Merge Track CSVs)")
-        print("3. 🔄 Convert New JSONs to Track CSVs (for Global Rankings)")
-        print("4. 🔧 Launch Web App (Streamlit)")
-        print("5. ☁️  Sync to GitHub (Requires Git)")
-        print("0. 🚪 Exit")
+        print("1. Update Live Series Standings (Process JSONs)")
+        print("2. Update Global Rankings (Merge Track CSVs)")
+        print("3. Convert New JSONs to Track CSVs (for Global Rankings)")
+        print("4. Launch Web App (Streamlit)")
+        print("5. Sync to GitHub (Requires Git)")
+        print("0. Exit")
         
         choice = input("\nEnter choice [0-5]: ").strip()
         
