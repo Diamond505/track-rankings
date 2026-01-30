@@ -35,7 +35,7 @@ def load_json_from_file(file_path):
     return None
 
 def process_current_seasonal_standings(input_folder, output_file):
-    print(f"Scanning folder for JSON results: {input_folder}")
+    print(f"Scanning folder for RACE results: {input_folder}")
     
     search_pattern = os.path.join(input_folder, "*.json")
     files = glob.glob(search_pattern)
@@ -47,6 +47,9 @@ def process_current_seasonal_standings(input_folder, output_file):
     print(f"Found {len(files)} JSON files to process.")
     
     driver_stats = {}
+    skipped_races = 0
+    processed_races = 0
+    MINIMUM_PARTICIPANTS = 10  # Minimum drivers for a race to count as a league race
 
     def get_entry(steam_id, first_name, last_name, car_class):
         steam_id = str(steam_id)
@@ -70,6 +73,16 @@ def process_current_seasonal_standings(input_folder, output_file):
             
         session_result = data.get('sessionResult', {})
         leaderboard = session_result.get('leaderBoardLines', [])
+        
+        # Check if this race has enough participants to be a league race
+        participant_count = len(leaderboard)
+        if participant_count < MINIMUM_PARTICIPANTS:
+            print(f"Skipping {filename}: Only {participant_count} participants (minimum {MINIMUM_PARTICIPANTS} required)")
+            skipped_races += 1
+            continue
+        
+        print(f"Processing {filename}: {participant_count} participants")
+        processed_races += 1
         
         # Sort leaderboard by position (just in case)
         # Trusting the file order for position (standard ACC output)
@@ -127,8 +140,12 @@ def process_current_seasonal_standings(input_folder, output_file):
         df['Rank'] = range(1, len(df) + 1)
         
         df.to_csv(output_file, index=False, sep=';')
+        print(f"\n{'='*60}")
         print(f"Successfully generated current standings with {len(df)} drivers.")
+        print(f"Processed {processed_races} league races (10+ participants)")
+        print(f"Skipped {skipped_races} non-league races (< 10 participants)")
         print(f"Saved to: {output_file}")
+        print(f"{'='*60}")
     else:
         print("No driver data found.")
 
