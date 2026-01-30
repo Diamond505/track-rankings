@@ -290,7 +290,7 @@ def main():
                     st.dataframe(
                         championship_data[champ_cols],
                         hide_index=True,
-                        width="stretch"
+                        use_container_width=True
                     )
                 except Exception as e:
                     st.error(f"Error calculating Global Rankings: {e}")
@@ -319,7 +319,7 @@ def main():
                     st.dataframe(
                         current_df[display_cols],
                         hide_index=True,
-                        width="stretch"
+                        use_container_width=True
                     )
                 except Exception as e:
                      st.error(f"Error loading Current Season standings: {e}")
@@ -363,7 +363,7 @@ def main():
                 
                 st.subheader(f"Results: {selected_track} - {selected_class}")
                 cols = ['Rank', 'LastName', 'Car', 'Best lap']
-                st.dataframe(track_data[cols], hide_index=True, width="stretch")
+                st.dataframe(track_data[cols], hide_index=True, use_container_width=True)
         else:
             st.warning("Track data file (all_tracks_data.csv) not found.")
 

@@ -216,9 +216,10 @@ def main():
         print("3. Convert New JSONs to Track CSVs (for Global Rankings)")
         print("4. Launch Web App (Streamlit)")
         print("5. Sync to GitHub (Requires Git)")
+        print("6. Download Results from G-Portal Servers (FTP)")
         print("0. Exit")
         
-        choice = input("\nEnter choice [0-5]: ").strip()
+        choice = input("\nEnter choice [0-6]: ").strip()
         
         if choice == '1':
             run_script('process_season_json.py')
@@ -234,6 +235,8 @@ def main():
                 pass
         elif choice == '5':
             sync_to_github()
+        elif choice == '6':
+            run_script('download_from_gportal.py')
         elif choice == '0':
             print("Goodbye!")
             break
