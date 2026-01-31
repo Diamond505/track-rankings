@@ -34,25 +34,41 @@ EXCLUDED_STEAM_IDS = {'M2533274796928070', }
 
 def load_json_from_file(file_path):
     """Load JSON data from a file with error handling and repair invalid JSON."""
-    encodings = ['utf-8', 'iso-8859-1', 'windows-1252']
+    encodings = ['utf-8-sig', 'utf-8', 'utf-16le', 'utf-16be', 'utf-16', 'iso-8859-1', 'windows-1252']
+    
     for encoding in encodings:
         try:
             with open(file_path, 'r', encoding=encoding) as file:
-                content = file.read().strip()
-                content = sanitize_json(content)
-                return json.loads(content)
-        except (UnicodeDecodeError, json.JSONDecodeError) as e:
+                raw_content = file.read()
+                
+                # 1. Try loading raw content first (safest)
+                try:
+                    return json.loads(raw_content)
+                except json.JSONDecodeError:
+                    # 2. If raw fails, try sanitizing
+                    sanitized = sanitize_json(raw_content)
+                    return json.loads(sanitized)
+                    
+        except (UnicodeError, LookupError):
+            continue
+        except Exception as e:
             if encoding == encodings[-1]:
                 print(f'Error loading JSON from file "{file_path}": {str(e)}')
+            
     return None
 
 def sanitize_json(content):
-    """Fix common JSON issues systematically."""
-    content = ''.join(c for c in content if c.isprintable())
-    content = re.sub(r"(?<!\\)'", "\"", content)
-    content = re.sub(r"(?<=[{,])\s*([a-zA-Z0-9_]+)\s*:", r'"\1":', content)
+    """Fix common JSON issues systematically without breaking valid strings."""
+    # Remove control characters except for common whitespace
+    content = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', content)
+    
+    # Fix missing quotes on keys (only if truly needed)
+    # content = re.sub(r"(?<=[{,])\s*([a-zA-Z0-9_]+)\s*:", r'"\1":', content)
+    
+    # Remove trailing commas in arrays/objects
     content = re.sub(r",\s*([\]}])", r"\1", content)
-    return content
+    
+    return content.strip()
 
 def format_time(time_ms):
     """Format milliseconds into MM:SS.mmm format."""
