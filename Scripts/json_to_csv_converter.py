@@ -27,7 +27,7 @@ DRIVER_CLASSES = load_driver_classes("Scripts/Class's - Sheet1.csv")
 COLUMN_ORDER = [
     'Place', 'FirstName', 'LastName', 'Class', 'Car Number', 'Car', 'Car Model',
     'Laps', 'Best S1', 'Best S2', 'Best S3', 'Best lap', 'Best lap (ms)',
-    'Ideal Best lap', 'Total Race Time', 'Lap Date', 'SteamId'
+    'Ideal Best lap', 'Total Race Time', 'Lap Date', 'SteamId', 'Conditions'
 ]
 
 EXCLUDED_STEAM_IDS = {'M2533274796928070', }
@@ -96,6 +96,10 @@ def json_to_csv_data(json_data, filename):
     leaderboard_lines = session_result.get('leaderBoardLines', [])
     driver_info_list = []
 
+    # Weather condition: 0 = Dry, 1 = Wet
+    is_wet = session_result.get('isWetSession', 0)
+    conditions = "Wet" if is_wet == 1 else "Dry"
+
     date_str = filename[:6]
     lap_date = f"20{date_str[:2]}-{date_str[2:4]}-{date_str[4:6]}"
 
@@ -133,7 +137,8 @@ def json_to_csv_data(json_data, filename):
             'Ideal Best lap': calculate_ideal_best_lap(best_splits),
             'Total Race Time': total_race_time,
             'Lap Date': lap_date,
-            'SteamId': driver_id
+            'SteamId': driver_id,
+            'Conditions': conditions
         }
 
         driver_info_list.append(driver_data)
@@ -142,19 +147,24 @@ def json_to_csv_data(json_data, filename):
     return sorted_drivers
 
 def process_race_data(input_directory_path, output_directory_path, output_types):
-    files = os.listdir(input_directory_path)
-    json_files = [f for f in files if f.endswith('.json')]
+    # Walk through the directory recursively to find all JSON files
+    json_files = []
+    for root, dirs, files in os.walk(input_directory_path):
+        for f in files:
+            if f.endswith('.json'):
+                # Store full path relative to input_directory_path or just the absolute path
+                json_files.append(os.path.join(root, f))
 
     os.makedirs(output_directory_path, exist_ok=True)
     track_data = defaultdict(list)
 
-    for json_file in sorted(json_files):
-        json_file_path = os.path.join(input_directory_path, json_file)
+    for json_file_path in sorted(json_files):
+        filename = os.path.basename(json_file_path)
         json_data = load_json_from_file(json_file_path)
-        if json_data is None or not json_to_csv_data(json_data, json_file):
+        if json_data is None or not json_to_csv_data(json_data, filename):
             continue
 
-        csv_data = json_to_csv_data(json_data, json_file)
+        csv_data = json_to_csv_data(json_data, filename)
         track_name = json_data.get('trackName', 'Unknown_Track')
 
         if 'results' in output_types:

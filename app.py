@@ -226,14 +226,11 @@ def main():
         if logo_path:
             st.image(logo_path, width=100)
     
-    # --- Season Selection ---
-    st.sidebar.header("Navigation")
-    view_option = st.sidebar.radio(
-        "Select View",
-        ["Live Series Standings", "Global Driver Rankings"]
-    )
-
-    # File Paths
+    with col3:
+        if logo_path:
+            st.image(logo_path, width=100)
+    
+    # --- File Paths ---
     CURRENT_FILE = "current_standings.csv" # JSON-based Series Standings
     S16_FILE = "s16_standings.csv" # S16 Archive
     TRACK_DATA_FILE = "all_tracks_data.csv" # Global Rankings Data
@@ -254,79 +251,63 @@ def main():
     s16_path = find_file(S16_FILE)
     track_data_path = find_file(TRACK_DATA_FILE)
 
-    # --- Tabs ---
-    # Tabs are context-dependent now, or we can keep them generic
-    tab1, tab2 = st.tabs(["🏆 Leaderboard", "⏱️ Track Records"])
+    # --- TOP LEVEL NAVIGATION TABS ---
+    tab_live, tab_global, tab_records, tab_archive = st.tabs([
+        "🏆 Live Series", 
+        "🌍 Global Rankings", 
+        "⏱️ Track Records",
+        "📚 S16 Archive"
+    ])
 
-    # --- Tab 1: Leaderboard ---
-    with tab1:
-        if view_option == "Global Driver Rankings":
-            st.header("Global Driver Rankings")
-            st.caption("Based on all-time Fastest Laps & Participation")
-            st.markdown("""
-            **Ranking System:**
-            *   **+10 Points** per Event Entry (Participation).
-            *   **Track Records (per Class):** 🥇 1pt (Holder of absolute fastest lap).
-            *   **+100 Bonus Points** for the 'King of the Hill' (Most #1 Records).
-            """)
-            
-            # Load Data
-            if track_data_path:
-                try:
-                    data = pd.read_csv(track_data_path, delimiter=';')
-                    # Clean columns
-                    data.columns = data.columns.str.strip()
-                    
-                    # Calculate
-                    championship_data = calculate_championship(data)
-                    
-                    # Display Columns
-                    champ_cols = ['Overall Rank', 'LastName', 'Participation', 'Track Records', 'King Bonus', 'Total Points']
-                    
-                    st.dataframe(
-                        championship_data[champ_cols],
-                        hide_index=True,
-                        use_container_width=True
-                    )
-                except Exception as e:
-                    st.error(f"Error calculating Global Rankings: {e}")
-            else:
-                st.error("Global data file (all_tracks_data.csv) not found.")
-
+    # --- Tab 1: Live Series ---
+    with tab_live:
+        st.header("Live Series Standings")
+        st.caption("Current Season - Points per Race Position")
+        st.markdown("""
+        **Scoring System:**
+        *   **1st**: 50, **2nd**: 45, **3rd**: 42, **4th**: 39, **5th**: 36
+        *   **6th-10th**: 33, 30, 27, 24, 21
+        *   **11th-20th**: 20 ↘ 11
+        *   **21st-30th**: 10 ↘ 1
+        """)
+        
+        if current_path:
+            try:
+                current_df = pd.read_csv(current_path, delimiter=';')
+                display_cols = ['Rank', 'LastName', 'Races', 'Wins', 'TotalPoints']
+                st.dataframe(current_df[display_cols], hide_index=True, use_container_width=True)
+            except Exception as e:
+                 st.error(f"Error loading Current Season standings: {e}")
         else:
-            # Live Series (Current Season)
-            st.header("Live Series Standings")
-            st.caption("Current Season - Points per Race Position")
-            st.markdown("""
-            **Scoring System:**
-            *   **1st**: 50, **2nd**: 45, **3rd**: 42, **4th**: 39, **5th**: 36
-            *   **6th-10th**: 33, 30, 27, 24, 21
-            *   **11th-20th**: 20 ↘ 11
-            *   **21st-30th**: 10 ↘ 1
-            """)
-            
-            if current_path:
-                try:
-                    current_df = pd.read_csv(current_path, delimiter=';')
-                    # Columns: FirstName, LastName, Car Class, TotalPoints, Races, Wins, SteamId, Rank
-                    
-                    display_cols = ['Rank', 'LastName', 'Races', 'Wins', 'TotalPoints']
-                    
-                    st.dataframe(
-                        current_df[display_cols],
-                        hide_index=True,
-                        use_container_width=True
-                    )
-                except Exception as e:
-                     st.error(f"Error loading Current Season standings: {e}")
-            else:
-                st.warning("Current Season Standings file not found. Please update data.")
+            st.warning("Current Season Standings file not found. Please update data.")
 
-    # --- Tab 2: Track Leaderboards ---
-    with tab2:
+    # --- Tab 2: Global Rankings ---
+    with tab_global:
+        st.header("Global Driver Rankings")
+        st.caption("Based on all-time Fastest Laps & Participation")
+        st.markdown("""
+        **Ranking System:**
+        *   **+10 Points** per Event Entry (Participation).
+        *   **Track Records (per Class):** 🥇 1pt (Holder of absolute fastest lap).
+        *   **+100 Bonus Points** for the 'King of the Hill' (Most #1 Records).
+        """)
+        
+        if track_data_path:
+            try:
+                data = pd.read_csv(track_data_path, delimiter=';')
+                data.columns = data.columns.str.strip()
+                championship_data = calculate_championship(data)
+                champ_cols = ['Overall Rank', 'LastName', 'Participation', 'Track Records', 'King Bonus', 'Total Points']
+                st.dataframe(championship_data[champ_cols], hide_index=True, use_container_width=True)
+            except Exception as e:
+                st.error(f"Error calculating Global Rankings: {e}")
+        else:
+            st.error("Global data file (all_tracks_data.csv) not found.")
+
+    # --- Tab 3: Track Records ---
+    with tab_records:
         st.header("Track Records")
         
-        # Load Track Data
         data = None
         if track_data_path:
              try:
@@ -337,13 +318,10 @@ def main():
                  pass
         
         if data is not None:
-            # Sidebar/Top Filters for this tab
             col1, col2 = st.columns(2)
-            
             with col1:
                 track_list = sorted(data['Track'].unique())
                 selected_track = st.selectbox("Select Track", track_list)
-                
             with col2:
                 track_subset = data[data['Track'] == selected_track]
                 available_classes = sorted(track_subset['Car Class'].unique()) if not track_subset.empty else []
@@ -358,10 +336,31 @@ def main():
                 track_data['Rank'] = range(1, len(track_data) + 1)
                 
                 st.subheader(f"Results: {selected_track} - {selected_class}")
-                cols = ['Rank', 'LastName', 'Car', 'Best lap']
+                
+                # Add weather icons
+                if 'Conditions' in track_data.columns:
+                    track_data['Cond'] = track_data['Conditions'].apply(lambda x: "☀️" if x == "Dry" else "🌧️")
+                    cols = ['Rank', 'LastName', 'Car', 'Best lap', 'Cond']
+                else:
+                    cols = ['Rank', 'LastName', 'Car', 'Best lap']
+                    
                 st.dataframe(track_data[cols], hide_index=True, use_container_width=True)
         else:
             st.warning("Track data file (all_tracks_data.csv) not found.")
+
+    # --- Tab 4: Archive ---
+    with tab_archive:
+        st.header("Season 16 Archive")
+        st.caption("Final Standings for Season 16")
+        
+        if s16_path:
+            try:
+                s16_df = pd.read_csv(s16_path, delimiter=';')
+                st.dataframe(s16_df, hide_index=True, use_container_width=True)
+            except Exception as e:
+                st.error(f"Error loading S16 Archive: {e}")
+        else:
+            st.info("No archive data found. Run Option 2 in the manager to generate S16 standings.")
 
 if __name__ == "__main__":
     main()
