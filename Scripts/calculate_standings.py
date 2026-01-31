@@ -94,7 +94,7 @@ def calculate_s16_standings(input_folder, output_file):
         except Exception as e:
             print(f"Error processing {filename}: {e}")
 
-    # --- Rule 3: King Bonus (1 pt) ---
+    # --- Rule 3: King Bonus (100 pts) ---
     max_wins = 0
     for count in driver_wins_count.values():
         if count > max_wins:
@@ -105,7 +105,7 @@ def calculate_s16_standings(input_folder, output_file):
             if count == max_wins:
                 # Add to stats
                 if steam_id in driver_stats:
-                    driver_stats[steam_id]['KingBonus'] += 1
+                    driver_stats[steam_id]['KingBonus'] += 100
 
     # --- Final Compilation ---
     results = []

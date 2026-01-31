@@ -64,8 +64,8 @@ def merge_csv_files(input_folder, output_file):
         # Ensure we don't have duplicate columns due to whitespace
         merged_df.columns = merged_df.columns.str.strip()
         
-        # DEDUPLICATION: Keep only the fastest lap per driver per track per class
-        # Group by Driver (SteamId), Track, and Car Class, then keep the row with minimum BestLap
+        # DEDUPLICATION: Keep only the FASTEST lap per track per class (ONE record per track/class)
+        # This means only the driver with the absolute fastest lap at each track in each class gets points
         print(f"\nTotal records before deduplication: {len(merged_df)}")
         
         # Ensure BestLap is numeric for proper sorting
@@ -73,13 +73,13 @@ def merge_csv_files(input_folder, output_file):
             # Convert BestLap to numeric (in case it's stored as string)
             merged_df['BestLap'] = pd.to_numeric(merged_df['BestLap'], errors='coerce')
             
-            # Group by SteamId, Track, and Car Class, keep the row with minimum BestLap
-            # Use idx to get the index of the minimum BestLap in each group
-            idx = merged_df.groupby(['SteamId', 'Track', 'Car Class'])['BestLap'].idxmin()
+            # Group by Track and Car Class, keep ONLY the row with the minimum BestLap
+            # This gives us ONE record per track per class - the absolute fastest
+            idx = merged_df.groupby(['Track', 'Car Class'])['BestLap'].idxmin()
             merged_df = merged_df.loc[idx].reset_index(drop=True)
             
             print(f"Total records after deduplication: {len(merged_df)}")
-            print("(Kept only fastest lap per driver per track per class)")
+            print("(Kept only the absolute fastest lap per track per class)")
         
         # Save to master CSV
         merged_df.to_csv(output_file, index=False, sep=';')
