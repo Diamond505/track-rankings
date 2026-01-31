@@ -71,8 +71,8 @@ def calculate_championship(df):
     """
     Calculates championship points based on the new custom rules:
     1. Participation: 10 points for each entry.
-    2. Track Record: 3 points for 1st, 2 points for 2nd, 1 point for 3rd (per track/class).
-    3. King of the Hill: 1 final point for whoever holds the most 1st place Track Records.
+    2. Track Record: 1 point for 1st place (per track/class). Only the absolute fastest driver gets points.
+    3. King of the Hill: 100 bonus points for holding the most 1st place Track Records.
     """
     if df.empty:
         return pd.DataFrame()
@@ -114,20 +114,16 @@ def calculate_championship(df):
             # Get best time per driver for this track
             best_per_driver = group.sort_values('Best lap (ms)').drop_duplicates(subset=['SteamId'])
             
-            # Take top 3
-            top_3 = best_per_driver.head(3)
+            # Points assignment: 1st place only (1 point)
+            # User request: "only the player who has the fastest lap ever should get points"
+            top_1 = best_per_driver.head(1)
             
-            # Points assignment: 1st=3, 2nd=2, 3rd=1
-            points_dist = [3, 2, 1]
-            
-            for i, (idx, row) in enumerate(top_3.iterrows()):
-                if i < len(points_dist):
-                    entry = get_driver_entry(row['SteamId'], row['LastName'])
-                    entry['Track Records'] += points_dist[i]
-                    
-                    # Count actual records for King Bonus (only 1st place)
-                    if i == 0:
-                        driver_records_count[row['SteamId']] += 1
+            for i, (idx, row) in enumerate(top_1.iterrows()):
+                entry = get_driver_entry(row['SteamId'], row['LastName'])
+                entry['Track Records'] += 1 # 1 point per record
+                
+                # Count actual records for King Bonus
+                driver_records_count[row['SteamId']] += 1
 
     # 4. King of the Hill Bonus
     # Who has the most 1st place records?
@@ -139,7 +135,7 @@ def calculate_championship(df):
     if max_records > 0:
         for steam_id, count in driver_records_count.items():
             if count == max_records:
-                driver_stats[steam_id]['King Bonus'] += 1
+                driver_stats[steam_id]['King Bonus'] += 100
 
     # Calculate Total
     results = []
@@ -270,8 +266,8 @@ def main():
             st.markdown("""
             **Ranking System:**
             *   **+10 Points** per Event Entry (Participation).
-            *   **Track Records (per Class):** 🥇3pts, 🥈2pts, 🥉1pt.
-            *   **+1 Bonus Point** for the 'King of the Hill' (Most #1 Records).
+            *   **Track Records (per Class):** 🥇 1pt (Holder of absolute fastest lap).
+            *   **+100 Bonus Points** for the 'King of the Hill' (Most #1 Records).
             """)
             
             # Load Data

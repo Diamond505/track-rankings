@@ -80,16 +80,15 @@ def calculate_s16_standings(input_folder, output_file):
                 # Keep best time per driver (in case of duplicates, though result files usually unique per driver)
                 valid_laps = valid_laps.drop_duplicates(subset=['SteamId'])
                 
-                top_3 = valid_laps.head(3)
-                points_dist = [3, 2, 1]
+                # Points assignment: 1st place ONLY (User request: only fastest gets points)
+                top_1 = valid_laps.head(1)
                 
-                for i, (idx, row) in enumerate(top_3.iterrows()):
+                for i, (idx, row) in enumerate(top_1.iterrows()):
                     entry = get_entry(row['SteamId'], row['LastName'])
-                    entry['TrackRecords'] += points_dist[i]
+                    entry['TrackRecords'] += 1 # 1 point per record
                     
-                    # Count for King Bonus (1st place only)
-                    if i == 0:
-                        driver_wins_count[str(row['SteamId'])] += 1
+                    # Count for King Bonus
+                    driver_wins_count[str(row['SteamId'])] += 1
                         
         except Exception as e:
             print(f"Error processing {filename}: {e}")
